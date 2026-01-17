@@ -2,14 +2,14 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Neon Bros: Pro Controller Support</title>
+    <title>Neon Bros: Pro Controller Fix</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
         body { margin: 0; overflow: hidden; background: #050505; font-family: 'Orbitron', sans-serif; }
         canvas { display: block; }
         
-        /* --- TUŞ İKONLARI (CSS ÇİZİM) --- */
+        /* --- TUŞ İKONLARI --- */
         .btn {
             display: inline-flex; justify-content: center; align-items: center;
             width: 28px; height: 28px; border-radius: 50%; 
@@ -88,7 +88,7 @@
         <div class="bottom-bar">
             <div class="ulti-container">
                 <div class="ulti-label">
-                    <span id="p1-ulti-icon" class="btn xbox-x">X</span> ULTİ
+                    <span id="p1-ulti-icon" class="btn"></span> ULTİ
                     <span id="p1-ulti-text" style="color:#00f7ff; font-size:10px; margin-left:auto;">HAZIR!</span>
                 </div>
                 <div class="ulti-bar-bg"><div id="p1-ulti-bar" class="ulti-bar-fill" style="background:#00f7ff; width:100%;"></div></div>
@@ -97,7 +97,7 @@
             <div class="ulti-container" style="text-align:right;">
                 <div class="ulti-label" style="justify-content: flex-end;">
                     <span id="p2-ulti-text" style="color:#ffaa00; font-size:10px; margin-right:auto;">HAZIR!</span>
-                    ULTİ <span id="p2-ulti-icon" class="btn xbox-x">X</span>
+                    ULTİ <span id="p2-ulti-icon" class="btn"></span>
                 </div>
                 <div class="ulti-bar-bg"><div id="p2-ulti-bar" class="ulti-bar-fill" style="background:#ffaa00; width:100%;"></div></div>
             </div>
@@ -113,7 +113,7 @@
                 <div style="font-size:20px; font-weight:bold; color:#00f7ff;">OYUNCU 1</div>
                 <div id="p1-con-name" class="con-name">KOL BEKLENİYOR...</div>
                 <div id="p1-prompt" class="start-prompt">
-                    <span id="p1-start-icon" class="btn xbox-a">A</span> BAS
+                    <span id="p1-start-icon" class="btn"></span> BAS
                 </div>
             </div>
 
@@ -121,7 +121,7 @@
                 <div style="font-size:20px; font-weight:bold; color:#ffaa00;">OYUNCU 2</div>
                 <div id="p2-con-name" class="con-name">KOL BEKLENİYOR...</div>
                 <div id="p2-prompt" class="start-prompt">
-                    <span id="p2-start-icon" class="btn xbox-a">A</span> BAS
+                    <span id="p2-start-icon" class="btn"></span> BAS
                 </div>
             </div>
         </div>
@@ -170,7 +170,6 @@
     function getControllerType(gamepad) {
         if (!gamepad) return 'xbox';
         const id = gamepad.id.toLowerCase();
-        // PS kolu genelde "Sony", "DualSense", "DualShock" veya "054c" (Vendor ID) içerir
         if (id.includes('sony') || id.includes('dual') || id.includes('054c') || id.includes('playstation')) {
             return 'ps';
         }
@@ -180,26 +179,27 @@
     function updateIcons(playerId, type) {
         const p = playerId === 0 ? uiElements.p1 : uiElements.p2;
         
-        // Sınıfları Temizle
+        // Sınıfları ve İÇERİĞİ Temizle (Düzeltme Burası)
         p.startIcon.className = 'btn';
+        p.startIcon.innerText = ''; 
+        
         p.ultiIcon.className = 'btn';
+        p.ultiIcon.innerText = ''; 
 
         if (type === 'ps') {
             // PS İkonları
-            p.startIcon.classList.add('ps-cross'); // Başlama tuşu (X)
-            p.ultiIcon.classList.add('ps-square'); // Ulti tuşu (Kare)
+            p.startIcon.classList.add('ps-cross');
+            p.ultiIcon.classList.add('ps-square'); // Kare ikonu
         } else {
-            // Xbox İkonları (Varsayılan)
-            p.startIcon.classList.add('xbox-a');   // Başlama tuşu (A)
+            // Xbox İkonları
+            p.startIcon.classList.add('xbox-a');
             p.startIcon.innerText = 'A';
-            p.ultiIcon.classList.add('xbox-x');    // Ulti tuşu (X)
+            p.ultiIcon.classList.add('xbox-x');
             p.ultiIcon.innerText = 'X';
         }
     }
 
     // --- OYUN SINIFLARI ---
-    
-    // Şok Dalgası
     class Shockwave {
         constructor(x, y, color) {
             this.x = x; this.y = y; this.color = color;
@@ -222,7 +222,6 @@
         }
     }
 
-    // Oyuncu
     class Player {
         constructor(id, color) {
             this.id = id; this.color = color;
@@ -237,12 +236,10 @@
             if (this.isDead) return;
             if (this.invulnerableTime > 0) this.invulnerableTime--;
 
-            // Hareket
             this.x += (Math.abs(gamepad.axes[0])>0.1 ? gamepad.axes[0] : 0) * this.speed;
             this.y += (Math.abs(gamepad.axes[1])>0.1 ? gamepad.axes[1] : 0) * this.speed;
             this.constrain();
 
-            // Nişan
             let ax = Math.abs(gamepad.axes[2])>0.1 ? gamepad.axes[2] : 0;
             let ay = Math.abs(gamepad.axes[3])>0.1 ? gamepad.axes[3] : 0;
             if(ax!==0 || ay!==0) {
@@ -254,7 +251,6 @@
                 }
             }
 
-            // Ulti (Button 2: Xbox X / PS Square)
             if(gamepad.buttons[2].pressed) this.triggerUlti();
             this.updateUI();
         }
@@ -354,7 +350,6 @@
         requestAnimationFrame(loop);
         const pads = navigator.getGamepads ? navigator.getGamepads() : [];
 
-        // MENÜ MANTIĞI VE DİNAMİK İKONLAR
         if (!gameActive) {
             // P1 Kontrol
             if (pads[0]) {
