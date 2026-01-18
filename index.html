@@ -217,7 +217,7 @@
 
     // --- ZAMANLAMA AYARLARI (HIZ SABİTLEME) ---
     // Burası oyunun tüm cihazlarda 90 FPS hızında (PC hızı) hesaplanmasını sağlar.
-    const TARGET_FPS = 110; 
+    const TARGET_FPS = 125; 
     const TIME_STEP = 1000 / TARGET_FPS; 
     let lastTime = 0;
     let accumulator = 0;
@@ -856,7 +856,7 @@
 
     function startWaveBreak() {
         const t = translations[currentLang];
-        isWaveBreak=true; waveBreakTimer=20; 
+        isWaveBreak=true; waveBreakTimer=10; 
         ui.waveTitle.innerText=t.waveComplete; ui.waveTitle.classList.remove("boss-warning");
         ui.waveInfo.className="wave-break";
     }
