@@ -216,7 +216,7 @@
     canvas.height = window.innerHeight;
 
     // --- ZAMANLAMA AYARLARI (HIZ SABİTLEME) ---
-    // Burası oyunun tüm cihazlarda 90 FPS hızında (PC hızı) hesaplanmasını sağlar.
+    // Burası oyunun tüm cihazlarda 125 FPS hızında (PC hızı) hesaplanmasını sağlar.
     const TARGET_FPS = 125; 
     const TIME_STEP = 1000 / TARGET_FPS; 
     let lastTime = 0;
@@ -856,7 +856,7 @@
 
     function startWaveBreak() {
         const t = translations[currentLang];
-        isWaveBreak=true; waveBreakTimer=10; 
+        isWaveBreak=true; waveBreakTimer=11; 
         ui.waveTitle.innerText=t.waveComplete; ui.waveTitle.classList.remove("boss-warning");
         ui.waveInfo.className="wave-break";
     }
@@ -1033,7 +1033,8 @@
     }
 
     function updateGameLogic(pads) {
-        if(isPaused || isGameOver) return;
+        if (!gameActive) return; // OYUN BAŞLAMADIYSA MANTIĞI DURDUR (DÜZELTME)
+        if (isPaused || isGameOver) return;
 
         // Start/Pause Kontrolü (Oyun içindeyken)
         let p1Start = p1PadIndex !== null && pads[p1PadIndex] && pads[p1PadIndex].buttons[9].pressed;
@@ -1073,7 +1074,7 @@
             if(isBossWave && bosses.length > 0) ui.waveInfo.innerText = t.bossHp + Math.floor(bosses[0].hp);
             else ui.waveInfo.innerText = t.remaining + (waveEnemiesTotal - waveEnemiesKilled);
         } else {
-            if(spawnTimer%60===0) { // Buradaki 60 mantığı fixed stepte sabit olduğu için artık saniye şaşmaz
+            if(spawnTimer%60===0) { 
                 waveBreakTimer--; ui.waveInfo.innerText=t.nextWave + waveBreakTimer + "s";
                 if(waveBreakTimer<=0) startWave(currentWave+1);
             }
