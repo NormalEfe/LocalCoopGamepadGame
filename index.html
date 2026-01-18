@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Neon Bros</title>
+    <title>Neon Bros - v2.2 (Controls)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
@@ -18,6 +18,7 @@
         .xbox-a { background: #1a1a1a; color: greenyellow; border: 2px solid #414040; font-size: 16px; }
         .xbox-x { background: #1a1a1a; color: rgb(27, 109, 216); border: 2px solid #414040; font-size: 16px; }
         .xbox-y { background: #1a1a1a; color: #ffcc00; border: 2px solid #414040; font-size: 16px; }
+        .xbox-b { background: #1a1a1a; color: #ff3333; border: 2px solid #414040; font-size: 16px; }
 
         .ps-cross { background: #1a1a1a; border: 2px solid #414040; }
         .ps-cross::after { content: '✕'; color: #4f9ee7; font-size: 16px; font-weight: bold; }
@@ -25,33 +26,14 @@
         .ps-square::after { content: ''; display: block; width: 10px; height: 10px; border: 3px solid #d856ac; border-radius: 2px; }
         .ps-triangle { background: #1a1a1a; border: 2px solid #414040; }
         .ps-triangle::after { content: '△'; color: #00ff88; font-size: 16px; font-weight: bold; }
+        .ps-circle { background: #1a1a1a; border: 2px solid #414040; }
+        .ps-circle::after { content: '◯'; color: #ff3333; font-size: 16px; font-weight: bold; }
         
         .bumper-icon {
             display: inline-block; padding: 2px 8px; background: #333; 
             border: 1px solid #666; border-radius: 4px; color: #fff; 
             font-size: 10px; font-weight: bold; margin: 0 5px;
         }
-
-        .sys-btn {
-            display: inline-flex; align-items: center; justify-content: center;
-            padding: 4px 12px;
-            background: linear-gradient(180deg, #3d3d3d, #1a1a1a);
-            border: 1px solid #555;
-            border-bottom: 3px solid #000;
-            border-radius: 20px;
-            color: #eee;
-            font-family: Arial, sans-serif;
-            font-size: 11px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin: 0 6px;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
-            text-shadow: 0 -1px 0 black;
-        }
-        
-        .xbox-menu::before { content: '☰'; font-size: 14px; margin-right: 5px; color: #ccc; }
-        .ps-opt { min-width: 60px; }
-        .ps-opt::before { content: 'OPTIONS'; }
 
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
         .top-bar { display: flex; justify-content: space-between; padding: 20px 50px; text-shadow: 0 0 10px currentColor; font-size: 24px; font-weight: bold; }
@@ -71,14 +53,39 @@
         .ulti-bar-bg { width: 100%; height: 12px; background: #222; border: 2px solid #444; border-radius: 6px; overflow: hidden; }
         .ulti-bar-fill { height: 100%; width: 0%; transition: width 0.1s linear; box-shadow: 0 0 15px currentColor; }
         
-        #start-screen, #pause-screen, #gameover-screen {
+        #start-screen, #pause-screen, #gameover-screen, #controls-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: white; z-index: 10; pointer-events: auto;
         }
-        #start-screen { background: radial-gradient(circle, rgba(10,10,20,0.98) 0%, #000 100%); }
+        #start-screen { background: radial-gradient(circle, rgba(10,10,20,0.98) 0%, #000 100%); z-index: 15; }
         #pause-screen { background: rgba(0, 0, 0, 0.85); display: none; z-index: 20; }
         #gameover-screen { background: rgba(0, 0, 0, 0.95); display: none; z-index: 30; }
+        
+        /* YENİ EKLENEN KONTROLLER EKRANI CSS'i */
+        #controls-overlay {
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            z-index: 50; /* En üstte olsun */
+            backdrop-filter: blur(5px);
+        }
+        .controls-box {
+            border: 2px solid #444;
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 247, 255, 0.2);
+            text-align: center;
+            max-width: 80%;
+            max-height: 80%;
+        }
+        .controls-box img {
+            max-width: 100%;
+            max-height: 60vh;
+            display: block;
+            margin: 0 auto 20px auto;
+            border-radius: 5px;
+        }
 
         h1 { font-size: 70px; margin: 0; letter-spacing: 5px; background: linear-gradient(to right, #00f7ff, #ffffff, #ffaa00); -webkit-background-clip: text; color: transparent; text-shadow: 0 0 30px rgba(255,255,255,0.3); }
 
@@ -124,17 +131,16 @@
         }
 
         #sfx-status {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #888;
-            border: 1px solid #333;
-            padding: 5px 15px;
-            border-radius: 15px;
-            background: rgba(0,0,0,0.5);
+            margin-top: 15px; font-size: 14px; color: #888; border: 1px solid #333;
+            padding: 5px 15px; border-radius: 15px; background: rgba(0,0,0,0.5);
             display: flex; align-items: center; gap: 10px;
         }
         #sfx-status.off { color: #555; }
         .sfx-icon { width: 20px; height: 20px; display: inline-flex; justify-content: center; align-items: center; border: 1px solid #666; border-radius: 50%; font-size: 12px; }
+
+        .controls-hint {
+            margin-top: 10px; font-size: 12px; color: #666; display: flex; align-items: center; gap: 5px;
+        }
 
     </style>
 </head>
@@ -143,6 +149,18 @@
     <audio id="bg-music" loop>
         <source src="https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Tours/Enthusiast/Tours_-_01_-_Enthusiast.mp3" type="audio/mpeg">
     </audio>
+
+    <div id="controls-overlay">
+        <div class="controls-box">
+            <h2 style="color: #00f7ff; margin-bottom: 20px;">OYUN KONTROLLERİ</h2>
+            <img src="https://placehold.co/600x400/1a1a1a/00f7ff?text=Gamepad+Tu%C5%9F+Dizilimi+G%C3%B6rseli" alt="Kontroller" id="controls-img">
+            
+            <div style="font-size: 14px; color: #aaa; margin-top: 20px;">
+                <span class="btn xbox-b" id="close-icon-xb">B</span> / <span class="btn ps-circle" id="close-icon-ps"></span> 
+                <span> : KAPAT</span>
+            </div>
+        </div>
+    </div>
 
     <div id="pause-screen">
         <h1 style="font-size: 50px;" id="txt-paused">DURAKLATILDI</h1>
@@ -226,6 +244,9 @@
             <div id="sfx-status">
                 <span id="sfx-icon-ui" class="sfx-icon xbox-y">Y</span>
                 <span id="txt-sfx-status">SES: AÇIK</span>
+            </div>
+            <div class="controls-hint">
+                <span style="border: 1px solid #666; padding: 0 4px; border-radius: 3px;">SELECT / SHARE</span> : KONTROLLER
             </div>
         </div>
 
@@ -537,7 +558,8 @@
         pauseScreen: document.getElementById('pause-screen'),
         gameoverScreen: document.getElementById('gameover-screen'),
         totalScoreDisplay: document.getElementById('total-score-display'),
-        finalWaveDisplay: document.getElementById('final-wave-display')
+        finalWaveDisplay: document.getElementById('final-wave-display'),
+        controlsOverlay: document.getElementById('controls-overlay')
     };
 
     const P1_COLOR = '#00f7ff';
@@ -545,6 +567,7 @@
     let gameActive = false;
     let isGameOver = false;
     let isPaused = false;
+    let isControlsOpen = false; // YENİ: Kontroller ekranı açık mı?
     let shakeTime = 0;
     
     let lastPauseToggle = 0;
@@ -562,7 +585,7 @@
         pauseIndex: 0, 
         overIndex: 0, 
         langIndex: 0,
-        inputLock: 0 // YENİ: Input bekleme süresi
+        inputLock: 0 
     };
     const langs = ['tr', 'en', 'de', 'zh'];
 
@@ -1079,6 +1102,12 @@
         ui.pauseScreen.style.display=isPaused?'flex':'none'; 
         if(isPaused) resetMenuState();
     }
+    
+    function toggleControls() {
+        isControlsOpen = !isControlsOpen;
+        ui.controlsOverlay.style.display = isControlsOpen ? 'flex' : 'none';
+        AudioEngine.playMenuSelect();
+    }
 
     function restartGame() {
         isGameOver = false; isPaused = false;
@@ -1139,7 +1168,7 @@
         const now = Date.now();
         if (now - menuNavState.lastMove > 200) {
             // Dil Değişimi
-            if (!gameActive && ui.startScreen.style.display !== 'none') {
+            if (!gameActive && ui.startScreen.style.display !== 'none' && !isControlsOpen) {
                 if (inputDirection.rb) {
                     menuNavState.langIndex = (menuNavState.langIndex + 1) % langs.length;
                     setLanguage(langs[menuNavState.langIndex]);
@@ -1185,7 +1214,7 @@
             for (let i = 0; i < pads.length; i++) {
                 const pad = pads[i];
                 if (!pad) continue;
-                if (!buttonStates[i]) buttonStates[i] = { pressed: false, btn3Pressed: false };
+                if (!buttonStates[i]) buttonStates[i] = { pressed: false, btn3Pressed: false, btn8Pressed: false, btn1Pressed: false };
                 const anyBtn = pad.buttons.some(b => b.pressed);
 
                 // SES AÇ/KAPA (Y tuşu / Üçgen)
@@ -1195,6 +1224,23 @@
                     rumble(i, 100, 0.2, 0.0);
                 }
                 if (!pad.buttons[3].pressed) buttonStates[i].btn3Pressed = false;
+
+                // KONTROLLER GÖRSELİ (Select / Share - Btn 8)
+                if (pad.buttons[8].pressed && !buttonStates[i].btn8Pressed) {
+                    toggleControls();
+                    buttonStates[i].btn8Pressed = true;
+                }
+                if (!pad.buttons[8].pressed) buttonStates[i].btn8Pressed = false;
+                
+                // KONTROLLER KAPATMA (B / Circle - Btn 1)
+                if (isControlsOpen && pad.buttons[1].pressed && !buttonStates[i].btn1Pressed) {
+                    toggleControls();
+                    buttonStates[i].btn1Pressed = true;
+                }
+                if (!pad.buttons[1].pressed) buttonStates[i].btn1Pressed = false;
+
+                // Eğer Kontrol ekranı açıksa diğer tuşları engelle
+                if (isControlsOpen) return;
 
                 if (anyBtn && !buttonStates[i].pressed) {
                     buttonStates[i].pressed = true;
@@ -1240,11 +1286,64 @@
         // Oyun İçi Start
         let p1Start = p1PadIndex !== null && pads[p1PadIndex] && pads[p1PadIndex].buttons[9].pressed;
         let p2Start = p2PadIndex !== null && pads[p2PadIndex] && pads[p2PadIndex].buttons[9].pressed;
+        
+        // Oyun İçi Kontrolleri Göster (Select/Share)
+        let p1Select = p1PadIndex !== null && pads[p1PadIndex] && pads[p1PadIndex].buttons[8].pressed;
+        let p2Select = p2PadIndex !== null && pads[p2PadIndex] && pads[p2PadIndex].buttons[8].pressed;
+        
+        // Oyun içindeyken Select'e basınca Controls aç ama oyunu da pause et
+        if((p1Select || p2Select) && Date.now()-lastPauseToggle>300) {
+            // Eğer oyun akıyorsa pause et ve kontrolü aç
+            if (!isPaused && !isGameOver) {
+                togglePause();
+                isControlsOpen = true;
+                ui.controlsOverlay.style.display = 'flex';
+                // Pause menüsünü gizle ki çakışmasın, sadece görsel görünsün
+                ui.pauseScreen.style.display = 'none'; 
+            } 
+            // Eğer zaten pause ise veya görsel açıksa kapat
+            else if (isPaused && isControlsOpen) {
+                isControlsOpen = false;
+                ui.controlsOverlay.style.display = 'none';
+                ui.pauseScreen.style.display = 'flex'; // Pause menüsünü geri getir
+            }
+             else if (isPaused && !isControlsOpen) {
+                 isControlsOpen = true;
+                 ui.controlsOverlay.style.display = 'flex';
+                 ui.pauseScreen.style.display = 'none';
+             }
+            lastPauseToggle = Date.now();
+        }
+
+        // Oyun İçi B Tuşu (Controls açıksa kapat)
+        let p1Back = p1PadIndex !== null && pads[p1PadIndex] && pads[p1PadIndex].buttons[1].pressed;
+        let p2Back = p2PadIndex !== null && pads[p2PadIndex] && pads[p2PadIndex].buttons[1].pressed;
+        if ((p1Back || p2Back) && isControlsOpen && Date.now()-lastPauseToggle>300) {
+            isControlsOpen = false;
+            ui.controlsOverlay.style.display = 'none';
+            ui.pauseScreen.style.display = 'flex';
+            lastPauseToggle = Date.now();
+        }
+
+
         if((p1Start || p2Start) && Date.now()-lastPauseToggle>300) { 
-            if(!isGameOver) { togglePause(); lastPauseToggle=Date.now(); }
+            if(!isGameOver) { 
+                // Eğer kontrol ekranı açıksa önce onu kapat
+                if(isControlsOpen) {
+                    isControlsOpen = false;
+                    ui.controlsOverlay.style.display = 'none';
+                    ui.pauseScreen.style.display = 'flex';
+                } else {
+                    togglePause(); 
+                }
+                lastPauseToggle=Date.now(); 
+            }
         }
 
         const t = translations[currentLang]; 
+
+        // Eğer Controls açıksa update durmalı
+        if (isControlsOpen) return;
 
         if(isPaused || isGameOver) {
             if(isGameOver && ui.gameoverScreen.style.display !== 'flex') {
