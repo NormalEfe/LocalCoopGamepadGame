@@ -289,14 +289,13 @@
         const pad = pads[padIndex];
         
         if (pad && pad.vibrationActuator) {
-            // Çoğu tarayıcıda standart
             pad.vibrationActuator.playEffect("dual-rumble", {
                 startDelay: 0,
                 duration: duration,
                 weakMagnitude: weak,
                 strongMagnitude: strong
             }).catch(e => {
-                // Eğer hata verirse konsola yaz (debug için)
+                // Hata yok
             });
         }
     }
@@ -457,7 +456,6 @@
         document.getElementById('txt-p2-title').innerText = t.p2;
         document.getElementById('txt-start-info').innerText = t.startInfo;
         
-        // YENİ EKLENEN KISIMLAR:
         document.getElementById('txt-lang-hint').innerText = t.langHint;
         document.getElementById('txt-nav-hint').innerText = t.navHint;
         
@@ -1042,22 +1040,26 @@
         updateControllerUI();
     }
 
-    function loop() {
-        requestAnimationFrame(loop);
+    // --- YENİ FIXED TIME STEP SİSTEMİ ---
+    const TARGET_FPS = 125;
+    const TIME_STEP = 1000 / TARGET_FPS;
+    let lastTime = 0;
+    let accumulator = 0;
+
+    // 1. OYUN MANTIĞI (Update)
+    function updateGameLogic() {
         const pads = navigator.getGamepads ? navigator.getGamepads() : [];
 
-        // --- GLOBAL MENU INPUT HANDLING ---
+        // INPUT VE MENÜ YÖNETİMİ
         let inputDirection = { up: false, down: false, lb: false, rb: false, select: false };
         let anyButton = false;
         
         for (let i = 0; i < pads.length; i++) {
             const pad = pads[i];
             if (!pad) continue;
-            
             if (pad.buttons.some(b => b.pressed) || Math.abs(pad.axes[0]) > 0.1 || Math.abs(pad.axes[1]) > 0.1) {
                 anyButton = true;
             }
-
             if (pad.axes[1] < -0.5) inputDirection.up = true;
             if (pad.axes[1] > 0.5) inputDirection.down = true;
             if (pad.buttons[4].pressed) inputDirection.lb = true;
@@ -1065,15 +1067,11 @@
             if (pad.buttons[0].pressed) inputDirection.select = true; 
         }
 
-        // SES MOTORUNU BAŞLAT (Browser Policy)
-        if(anyButton && !AudioEngine.initialized) {
-            AudioEngine.init();
-        }
+        if(anyButton && !AudioEngine.initialized) { AudioEngine.init(); }
 
         const now = Date.now();
         if (now - menuNavState.lastMove > 200) {
-            
-            // 1. DİL SEÇİMİ (START EKRANI) - LB/RB
+            // Dil Değişimi
             if (!gameActive && ui.startScreen.style.display !== 'none') {
                 if (inputDirection.rb) {
                     menuNavState.langIndex = (menuNavState.langIndex + 1) % langs.length;
@@ -1088,12 +1086,10 @@
                     menuNavState.lastMove = now;
                 }
             }
-
-            // 2. PAUSE MENÜSÜ
+            // Pause Menü
             if (isPaused) {
                 if (inputDirection.down) { menuNavState.pauseIndex = 1; updateMenuFocus(); menuNavState.lastMove = now; }
                 if (inputDirection.up) { menuNavState.pauseIndex = 0; updateMenuFocus(); menuNavState.lastMove = now; }
-                
                 if (inputDirection.select) {
                     AudioEngine.playMenuSelect();
                     if (menuNavState.pauseIndex === 0) togglePause(); 
@@ -1101,12 +1097,10 @@
                     menuNavState.lastMove = now + 200; 
                 }
             }
-
-            // 3. GAME OVER MENÜSÜ
+            // Game Over Menü
             if (isGameOver) {
                 if (inputDirection.down) { menuNavState.overIndex = 1; updateMenuFocus(); menuNavState.lastMove = now; }
                 if (inputDirection.up) { menuNavState.overIndex = 0; updateMenuFocus(); menuNavState.lastMove = now; }
-
                 if (inputDirection.select) {
                     AudioEngine.playMenuSelect();
                     if (menuNavState.overIndex === 0) restartGame(); 
@@ -1116,7 +1110,7 @@
             }
         }
 
-        // --- MENÜ VE KOL SEÇİM MANTIĞI ---
+        // Ana Menü Kol Seçimi
         if (!gameActive) {
             for (let i = 0; i < pads.length; i++) {
                 const pad = pads[i];
@@ -1165,10 +1159,9 @@
             return;
         }
 
-        // --- OYUN İÇİ START ---
+        // Oyun İçi Start
         let p1Start = p1PadIndex !== null && pads[p1PadIndex] && pads[p1PadIndex].buttons[9].pressed;
         let p2Start = p2PadIndex !== null && pads[p2PadIndex] && pads[p2PadIndex].buttons[9].pressed;
-
         if((p1Start || p2Start) && Date.now()-lastPauseToggle>300) { 
             if(!isGameOver) { togglePause(); lastPauseToggle=Date.now(); }
         }
@@ -1185,12 +1178,7 @@
             return; 
         }
 
-        ctx.fillStyle = "#050505"; ctx.fillRect(0,0,canvas.width, canvas.height);
-        if(shakeTime>0) { ctx.save(); ctx.translate((Math.random()-0.5)*15,(Math.random()-0.5)*15); shakeTime--; }
-        ctx.strokeStyle="#111"; ctx.lineWidth=2; ctx.beginPath();
-        for(let x=0;x<canvas.width;x+=50){ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);}
-        for(let y=0;y<canvas.height;y+=50){ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);} ctx.stroke();
-
+        // OYUN AKTİFKEN HESAPLAMALAR
         if(p1PadIndex !== null && pads[p1PadIndex]) players[0].update(pads[p1PadIndex]);
         if(p2PadIndex !== null && pads[p2PadIndex]) players[1].update(pads[p2PadIndex]);
 
@@ -1226,7 +1214,6 @@
         [0,1].forEach(i=>{
             let me=players[i], other=players[i===0?1:0];
             if ((i===0 && p1PadIndex===null) || (i===1 && p2PadIndex===null)) return;
-
             if(me.isDead && !other.isDead && Math.hypot(me.x-other.x,me.y-other.y)<60) {
                 me.reviveProgress+=1.5;
                 if(me.reviveProgress>=100) { 
@@ -1237,12 +1224,12 @@
             } else me.reviveProgress=0;
         });
 
-        shockwaves.forEach((s,i)=>{if(s.active){s.update();s.draw();}else shockwaves.splice(i,1);});
+        shockwaves.forEach((s,i)=>{if(s.active){s.update();}else shockwaves.splice(i,1);});
         
         for(let i=bosses.length-1; i>=0; i--){
             let b = bosses[i];
             if(b.hp > 0) {
-                b.update(); b.draw();
+                b.update();
                 players.forEach(p => { 
                     if((p.id===0 && p1PadIndex===null) || (p.id===1 && p2PadIndex===null)) return;
                     if(!p.isDead && p.invulnerableTime<=0 && Math.hypot(p.x-b.x, p.y-b.y) < p.r + b.r) { 
@@ -1252,11 +1239,8 @@
             } else bosses.splice(i, 1);
         }
 
-        if(p1PadIndex !== null) players[0].draw(); 
-        if(p2PadIndex !== null) players[1].draw();
-
         for(let i=bullets.length-1;i>=0;i--){
-            let b=bullets[i]; b.update(); b.draw();
+            let b=bullets[i]; b.update();
             if(b.x<0||b.x>canvas.width||b.y<0||b.y>canvas.height){bullets.splice(i,1);continue;}
             
             let hit = false;
@@ -1286,11 +1270,10 @@
         }
         
         for(let i=enemies.length-1;i>=0;i--){
-            let e=enemies[i]; e.update(); e.draw();
+            let e=enemies[i]; e.update();
             for(let j=0; j<players.length; j++){
                 let p = players[j];
                 if((p.id===0 && p1PadIndex===null) || (p.id===1 && p2PadIndex===null)) continue;
-
                 if(!p.isDead && p.invulnerableTime<=0 && Math.hypot(p.x-e.x,p.y-e.y)<p.r+e.r){
                     p.takeDamage(1); createExplosion(e.x,e.y,e.c); enemies.splice(i,1); waveEnemiesKilled++; break;
                 }
@@ -1298,7 +1281,7 @@
         }
 
         for(let i=traps.length-1; i>=0; i--) {
-            let t = traps[i]; t.draw();
+            let t = traps[i]; 
             players.forEach(p => {
                 if((p.id===0 && p1PadIndex===null) || (p.id===1 && p2PadIndex===null)) return;
                 if (!p.isDead && Math.hypot(p.x-t.x, p.y-t.y) < t.r + p.r) {
@@ -1307,7 +1290,7 @@
             });
         }
         for(let i=healthPacks.length-1; i>=0; i--) {
-            let h = healthPacks[i]; h.draw();
+            let h = healthPacks[i]; 
             players.forEach(p => {
                 if((p.id===0 && p1PadIndex===null) || (p.id===1 && p2PadIndex===null)) return;
                 if (!p.isDead && Math.hypot(p.x-h.x, p.y-h.y) < h.r + p.r) {
@@ -1316,17 +1299,63 @@
             });
         }
         
-        particles.forEach((p,i)=>{p.update();p.draw();if(p.life<=0)particles.splice(i,1);});
-        if(shakeTime>0) ctx.restore();
+        particles.forEach((p,i)=>{p.update();if(p.life<=0)particles.splice(i,1);});
         
-        ui.p1.score.innerText = `P1: ${players[0].score}`; ui.p2.score.innerText = `P2: ${players[1].score}`;
-        
+        if(shakeTime>0) shakeTime--;
+
         let activePlayersCount = (p1PadIndex !== null ? 1 : 0) + (p2PadIndex !== null ? 1 : 0);
         let deadPlayersCount = (p1PadIndex !== null && players[0].isDead ? 1 : 0) + (p2PadIndex !== null && players[1].isDead ? 1 : 0);
         
         if(activePlayersCount > 0 && activePlayersCount === deadPlayersCount) isGameOver=true;
     }
-    loop();
+
+    // 2. ÇİZİM (Render)
+    function drawGame() {
+        ctx.fillStyle = "#050505"; ctx.fillRect(0,0,canvas.width, canvas.height);
+        
+        ctx.save();
+        if(shakeTime>0) { ctx.translate((Math.random()-0.5)*15,(Math.random()-0.5)*15); }
+        
+        ctx.strokeStyle="#111"; ctx.lineWidth=2; ctx.beginPath();
+        for(let x=0;x<canvas.width;x+=50){ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);}
+        for(let y=0;y<canvas.height;y+=50){ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);} ctx.stroke();
+
+        shockwaves.forEach(s => s.draw());
+        bosses.forEach(b => b.draw());
+        if(p1PadIndex !== null) players[0].draw(); 
+        if(p2PadIndex !== null) players[1].draw();
+        bullets.forEach(b => b.draw());
+        enemies.forEach(e => e.draw());
+        traps.forEach(t => t.draw());
+        healthPacks.forEach(h => h.draw());
+        particles.forEach(p => p.draw());
+
+        ctx.restore(); 
+
+        ui.p1.score.innerText = `P1: ${players[0].score}`; ui.p2.score.innerText = `P2: ${players[1].score}`;
+    }
+
+    // 3. ANA DÖNGÜ (Loop)
+    function loop(timestamp) {
+        requestAnimationFrame(loop);
+
+        if (!lastTime) lastTime = timestamp;
+        let deltaTime = timestamp - lastTime;
+        lastTime = timestamp;
+
+        if (deltaTime > 100) deltaTime = 100; // Spiral of death fix
+
+        accumulator += deltaTime;
+
+        while (accumulator >= TIME_STEP) {
+            updateGameLogic();
+            accumulator -= TIME_STEP;
+        }
+
+        drawGame();
+    }
+
+    requestAnimationFrame(loop);
     window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
 </script>
 </body>
