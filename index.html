@@ -17,11 +17,14 @@
         }
         .xbox-a { background: #1a1a1a; color: greenyellow; border: 2px solid #414040; font-size: 16px; }
         .xbox-x { background: #1a1a1a; color: rgb(27, 109, 216); border: 2px solid #414040; font-size: 16px; }
+        .xbox-y { background: #1a1a1a; color: #ffcc00; border: 2px solid #414040; font-size: 16px; }
 
         .ps-cross { background: #1a1a1a; border: 2px solid #414040; }
         .ps-cross::after { content: '✕'; color: #4f9ee7; font-size: 16px; font-weight: bold; }
         .ps-square { background: #1a1a1a; border: 2px solid #414040; }
         .ps-square::after { content: ''; display: block; width: 10px; height: 10px; border: 3px solid #d856ac; border-radius: 2px; }
+        .ps-triangle { background: #1a1a1a; border: 2px solid #414040; }
+        .ps-triangle::after { content: '△'; color: #00ff88; font-size: 16px; font-weight: bold; }
         
         .bumper-icon {
             display: inline-block; padding: 2px 8px; background: #333; 
@@ -120,6 +123,19 @@
             box-shadow: 0 0 20px rgba(255, 170, 0, 0.3); transform: scale(1.05); font-weight: bold;
         }
 
+        #sfx-status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+            border: 1px solid #333;
+            padding: 5px 15px;
+            border-radius: 15px;
+            background: rgba(0,0,0,0.5);
+            display: flex; align-items: center; gap: 10px;
+        }
+        #sfx-status.off { color: #555; }
+        .sfx-icon { width: 20px; height: 20px; display: inline-flex; justify-content: center; align-items: center; border: 1px solid #666; border-radius: 50%; font-size: 12px; }
+
     </style>
 </head>
 <body>
@@ -202,9 +218,17 @@
             <div class="lang-btn" data-lang="de">DEUTSCH</div>
             <div class="lang-btn" data-lang="zh">中文</div>
         </div>
-        <div style="margin-top: 10px; font-size: 10px; color: #444; display: flex; align-items: center; gap: 5px;">
-            <span class="bumper-icon">LB</span> / <span class="bumper-icon">RB</span> <span id="txt-lang-hint"> : DİL DEĞİŞTİR</span>
+        
+        <div style="margin-top: 15px; display:flex; flex-direction:column; align-items:center; gap:5px;">
+             <div style="font-size: 10px; color: #444; display: flex; align-items: center; gap: 5px;">
+                <span class="bumper-icon">LB</span> / <span class="bumper-icon">RB</span> <span id="txt-lang-hint"> : DİL DEĞİŞTİR</span>
+            </div>
+            <div id="sfx-status">
+                <span id="sfx-icon-ui" class="sfx-icon xbox-y">Y</span>
+                <span id="txt-sfx-status">SES: AÇIK</span>
+            </div>
         </div>
+
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -214,6 +238,8 @@
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    let soundEnabled = true;
 
     // --- SES MOTORU (SFX) ---
     const AudioEngine = {
@@ -227,17 +253,25 @@
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             this.ctx = new AudioContext();
             this.masterGain = this.ctx.createGain();
-            this.masterGain.gain.value = 0.3; 
+            this.masterGain.gain.value = soundEnabled ? 0.3 : 0; 
             this.masterGain.connect(this.ctx.destination);
             
             this.bgMusicElement.volume = 0.4;
-            this.bgMusicElement.play().catch(e => console.log("Müzik başlatılamadı:", e));
+            if(soundEnabled) {
+                this.bgMusicElement.play().catch(e => console.log("Müzik başlatılamadı:", e));
+            }
 
             this.initialized = true;
         },
+        
+        toggleSound: function(state) {
+            if(!this.initialized && state) this.init();
+            if(this.masterGain) this.masterGain.gain.setValueAtTime(state ? 0.3 : 0, this.ctx.currentTime);
+            if(state) this.bgMusicElement.play().catch(()=>{}); else this.bgMusicElement.pause();
+        },
 
         playTone: function(freq, type, duration, vol=0.5, slideTo=0) {
-            if (!this.ctx) return;
+            if (!this.ctx || !soundEnabled) return;
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = type;
@@ -282,6 +316,23 @@
             setTimeout(() => this.playTone(60, 'square', 0.5, 0.5), 400); 
         }
     };
+
+    function toggleAudioState() {
+        soundEnabled = !soundEnabled;
+        AudioEngine.toggleSound(soundEnabled);
+        
+        const uiText = document.getElementById('txt-sfx-status');
+        const uiDiv = document.getElementById('sfx-status');
+        const t = translations[currentLang];
+        
+        if (soundEnabled) {
+            uiText.innerText = t.soundOn;
+            uiDiv.classList.remove('off');
+        } else {
+            uiText.innerText = t.soundOff;
+            uiDiv.classList.add('off');
+        }
+    }
 
     // --- TİTREŞİM YARDIMCISI (DUALSENSE FIX) ---
     function rumble(padIndex, duration, weak, strong) {
@@ -332,7 +383,9 @@
             controllerPS: "PS KOLU",
             controllerXbox: "XBOX KOLU",
             langHint: " : DİL DEĞİŞTİR",
-            navHint: "(SOL ANALOG: Seç / A: Onayla)"
+            navHint: "(SOL ANALOG: Seç / A: Onayla)",
+            soundOn: "SES: AÇIK",
+            soundOff: "SES: KAPALI"
         },
         en: {
             paused: "PAUSED",
@@ -364,7 +417,9 @@
             controllerPS: "PS CONTROLLER",
             controllerXbox: "XBOX CONTROLLER",
             langHint: " : CHANGE LANGUAGE",
-            navHint: "(LEFT STICK: Select / A: Confirm)"
+            navHint: "(LEFT STICK: Select / A: Confirm)",
+            soundOn: "SOUND: ON",
+            soundOff: "SOUND: OFF"
         },
         de: {
             paused: "PAUSIERT",
@@ -396,7 +451,9 @@
             controllerPS: "PS CONTROLLER",
             controllerXbox: "XBOX CONTROLLER",
             langHint: " : SPRACHE ÄNDERN",
-            navHint: "(LINKER STICK: Wählen / A: Bestätigen)"
+            navHint: "(LINKER STICK: Wählen / A: Bestätigen)",
+            soundOn: "TON: AN",
+            soundOff: "TON: AUS"
         },
         zh: {
             paused: "暂停",
@@ -428,7 +485,9 @@
             controllerPS: "PS手柄",
             controllerXbox: "XBOX手柄",
             langHint: " : 更改语言",
-            navHint: "(左摇杆: 选择 / A: 确认)"
+            navHint: "(左摇杆: 选择 / A: 确认)",
+            soundOn: "声音: 开",
+            soundOff: "声音: 关"
         }
     };
 
@@ -459,6 +518,8 @@
         document.getElementById('txt-lang-hint').innerText = t.langHint;
         document.getElementById('txt-nav-hint').innerText = t.navHint;
         
+        document.getElementById('txt-sfx-status').innerText = soundEnabled ? t.soundOn : t.soundOff;
+
         document.querySelectorAll('.txt-press-btn').forEach(el => el.innerText = t.pressJoin);
         document.querySelectorAll('.txt-ready').forEach(el => el.innerText = t.readySimple);
 
@@ -500,7 +561,8 @@
         lastMove: 0,
         pauseIndex: 0, 
         overIndex: 0, 
-        langIndex: 0  
+        langIndex: 0,
+        inputLock: 0 // YENİ: Input bekleme süresi
     };
     const langs = ['tr', 'en', 'de', 'zh'];
 
@@ -541,6 +603,18 @@
     function updateControllerUI() {
         const pads = navigator.getGamepads ? navigator.getGamepads() : [];
         const t = translations[currentLang];
+        
+        // Ses icon güncelle
+        const sfxIcon = document.getElementById('sfx-icon-ui');
+        let anyPs = false;
+        if(p1PadIndex!==null && getControllerType(pads[p1PadIndex])==='ps') anyPs = true;
+        if(p2PadIndex!==null && getControllerType(pads[p2PadIndex])==='ps') anyPs = true;
+        
+        if(anyPs) {
+            sfxIcon.className = 'sfx-icon ps-triangle'; sfxIcon.innerText = '';
+        } else {
+            sfxIcon.className = 'sfx-icon xbox-y'; sfxIcon.innerText = 'Y';
+        }
 
         if (p1PadIndex !== null && pads[p1PadIndex]) {
             ui.p1.card.classList.add('connected');
@@ -701,21 +775,11 @@
                     
                     const padIdx = this.id === 0 ? p1PadIndex : p2PadIndex;
                     
-                    // RECOIL (Geri Tepme) Hesabı
+                    // RECOIL
                     let aimX = Math.cos(this.aimAngle);
-                    
-                    let strong = 0.4; 
-                    let weak = 0.4;
-                    
-                    if (aimX > 0) { // Sağa ateş -> Sol el hissetsin
-                        strong += aimX * 0.4; 
-                        weak -= aimX * 0.2;   
-                    } 
-                    else { // Sola ateş -> Sağ el hissetsin
-                        weak += Math.abs(aimX) * 0.4; 
-                        strong -= Math.abs(aimX) * 0.2;
-                    }
-
+                    let strong = 0.4; let weak = 0.4;
+                    if (aimX > 0) { strong += aimX * 0.4; weak -= aimX * 0.2; } 
+                    else { weak += Math.abs(aimX) * 0.4; strong -= Math.abs(aimX) * 0.2; }
                     rumble(padIdx, 80, weak, strong); 
 
                     this.lastShot=Date.now(); this.x-=Math.cos(this.aimAngle)*2; this.y-=Math.sin(this.aimAngle)*2;
@@ -1038,6 +1102,9 @@
         players[0].reset(); players[1].reset();
         currentWave = 1;
         updateControllerUI();
+        
+        // BUG FIX: Tuş basılı kalırsa direkt hazır olmasın diye bekleme süresi
+        menuNavState.inputLock = Date.now() + 500;
     }
 
     // --- YENİ FIXED TIME STEP SİSTEMİ ---
@@ -1110,13 +1177,24 @@
             }
         }
 
-        // Ana Menü Kol Seçimi
+        // Ana Menü Logic
         if (!gameActive) {
+            // BUG FIX: Menüye dönünce input lock bekle
+            if (Date.now() < menuNavState.inputLock) return;
+
             for (let i = 0; i < pads.length; i++) {
                 const pad = pads[i];
                 if (!pad) continue;
-                if (!buttonStates[i]) buttonStates[i] = { pressed: false };
+                if (!buttonStates[i]) buttonStates[i] = { pressed: false, btn3Pressed: false };
                 const anyBtn = pad.buttons.some(b => b.pressed);
+
+                // SES AÇ/KAPA (Y tuşu / Üçgen)
+                if (pad.buttons[3].pressed && !buttonStates[i].btn3Pressed) {
+                    toggleAudioState();
+                    buttonStates[i].btn3Pressed = true;
+                    rumble(i, 100, 0.2, 0.0);
+                }
+                if (!pad.buttons[3].pressed) buttonStates[i].btn3Pressed = false;
 
                 if (anyBtn && !buttonStates[i].pressed) {
                     buttonStates[i].pressed = true;
@@ -1343,7 +1421,7 @@
         let deltaTime = timestamp - lastTime;
         lastTime = timestamp;
 
-        if (deltaTime > 100) deltaTime = 100; // Spiral of death fix
+        if (deltaTime > 100) deltaTime = 100;
 
         accumulator += deltaTime;
 
